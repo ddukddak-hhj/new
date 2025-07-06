@@ -1,0 +1,43 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Log in to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build and Push Docker image
+      run: |
+        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest .
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
+
+    - name: Deploy to EC2
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
+          docker stop demo || true
+          docker rm demo || true
+          docker run -d -p 80:5000 --name demo ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
+
+    - name: Slack Notification       
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
