@@ -40,7 +40,7 @@ def home():
     </head>
     <body>
         <div class="container">
-            <h1>  Demo!</h1>
+            <h1>  Hello from DevOps!</h1>
             <p>This site is automatically deployed via GitHub Actions & Docker.</p>
         </div>
     </body>
