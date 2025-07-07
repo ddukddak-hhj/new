@@ -42,3 +42,15 @@ jobs:
         fields: repo,message,commit,author
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+    - name: Deploy to EC2 via SSH      
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
+          docker stop demo || true
+          docker rm demo || true
+          docker run -d --pull always -p 80:5000 --name demo ${{ secrets.DOCKERHUB_USERNAME }}/devops-demo:latest
