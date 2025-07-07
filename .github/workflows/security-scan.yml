@@ -1,0 +1,35 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  trivy-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    # DockerHub 로그인 (Private Registry 대응용 - 필요시 secrets 설정)
+    - name: Log in to DockerHub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # Docker 이미지 빌드 (Trivy가 분석할 대상)
+    - name: Build Docker image
+      run: docker build -t demo-app .
+
+    # Trivy 취약점 스캔 실행
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: demo-app                    # 위에서 만든 이미지 이름
+        format: table                          # 보기 좋게 테이블 형식 출력
+        exit-code: 1                           # 취약점 존재 시 실패 처리
+        ignore-unfixed: true                   # 아직 패치되지 않은 취약점은 무시
+        vuln-type: 'os,library'                # OS, 라이브러리 둘 다 분석
